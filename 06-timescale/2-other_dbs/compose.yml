@@ -1,0 +1,28 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./etc/ollama/ollama-entrypoint.sh:/ollama-entrypoint.sh
+      - ./etc/ollama/ollama-healthcheck.sh:/ollama-healthcheck.sh
+    entrypoint: ["/ollama-entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "/ollama-healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  server:
+    image: python:3.10
+    restart: unless-stopped
+    command: ["python", "-m", "http.server", "8000"]
+    network_mode: "host"
+    ports:
+      - "8000:8000"
+
+volumes:
+  ollama_data:
