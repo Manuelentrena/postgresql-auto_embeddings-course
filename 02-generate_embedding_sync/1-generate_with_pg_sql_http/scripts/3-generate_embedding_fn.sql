@@ -1,39 +1,50 @@
-CREATE OR REPLACE FUNCTION generate_embedding(
-)
-	RETURNS TRIGGER
-	LANGUAGE plpgsql
+CREATE EXTENSION IF NOT EXISTS http;
+
+CREATE OR REPLACE FUNCTION generate_embedding()
+RETURNS TRIGGER
+LANGUAGE plpgsql
 AS
 $$
 DECLARE
-	text_content TEXT;
-	response_body jsonb;
-	embedding_array DOUBLE PRECISION[];
-	api_url TEXT := 'http://1-generate_with_pg_sql_http-ollama-1:11434/api/embeddings';
+    text_content TEXT;
+    response jsonb;
+    embedding_vector vector(768);
+    api_url TEXT := 'https://api.openai.com/v1/embeddings';
 BEGIN
-	text_content := new.name || ' ' || new.summary;
+    -- 1. Texto a embeddear
+    text_content := COALESCE(NEW.name, '') || ' ' || COALESCE(NEW.summary, '');
 
-	SELECT content::jsonb
-	INTO response_body
-	FROM http_post(
-		api_url,
-		JSONB_BUILD_OBJECT(
-			'model', 'nomic-embed-text',
-			'prompt', text_content
-		)::text,
-		'application/json'
-	 );
+    -- 2. Llamada HTTP (FORMA CORRECTA SEGÚN TU EXTENSIÓN)
+    SELECT content::jsonb
+    INTO response
+    FROM http((
+        'POST'::text,
+        api_url::text,
+        ARRAY[
+            http_header('Authorization', 'Bearer MY KEY'),
+        ]::http_header[],
+        'application/json'::text,
+        jsonb_build_object(
+            'model', 'text-embedding-3-small',
+            'input', text_content,
+            'dimensions', 768
+        )::text
+    )::http_request);
 
-	SELECT ARRAY_AGG(e::DOUBLE PRECISION)
-	INTO embedding_array
-	FROM JSONB_ARRAY_ELEMENTS_TEXT(response_body -> 'embedding') AS e;
+    -- 3. Convertir array JSON a vector
+    embedding_vector := (
+        SELECT array_agg(value::float8)::vector
+        FROM jsonb_array_elements_text(response->'data'->0->'embedding') AS t(value)
+    );
 
-	new.embedding = embedding_array::vector;
+    -- 4. Guardar embedding
+    NEW.embedding := embedding_vector;
 
-	RETURN new;
+    RETURN NEW;
 END;
 $$;
 
-CREATE OR REPLACE TRIGGER trg__courses__generate_embedding_before_insert
+CREATE TRIGGER trg__courses__generate_embedding_before_insert
 	BEFORE INSERT
 	ON mooc.courses
 	FOR EACH ROW
