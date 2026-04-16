@@ -8,7 +8,7 @@ CREATE TABLE mooc.courses (
 	embedding vector(768)
 );
 
-CREATE OR REPLACE FUNCTION generate_embedding(
+/* CREATE OR REPLACE FUNCTION generate_embedding(
 )
 	RETURNS TRIGGER
 	LANGUAGE plpgsql
@@ -47,4 +47,4 @@ CREATE OR REPLACE TRIGGER trg__courses__generate_embedding_before_insert
 	BEFORE INSERT
 	ON mooc.courses
 	FOR EACH ROW
-EXECUTE FUNCTION generate_embedding();
+EXECUTE FUNCTION generate_embedding(); */
