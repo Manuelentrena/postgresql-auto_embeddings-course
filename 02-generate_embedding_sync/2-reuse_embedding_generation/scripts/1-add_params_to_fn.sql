@@ -9,27 +9,33 @@ DECLARE
 	text_content TEXT;
 	response_body jsonb;
 	embedding_array DOUBLE PRECISION[];
-	api_url TEXT := 'http://2-reuse_embedding_generation-ollama-1:11434/api/embeddings';
+	api_url TEXT := 'https://api.openai.com/v1/embeddings';
 	embedding_input_query_string TEXT;
 BEGIN
 	embedding_input_query_string := 'SELECT ' || embedding_input_func_name || '($1)';
 
 	EXECUTE embedding_input_query_string INTO text_content USING new;
 
-	SELECT content::jsonb
-	INTO response_body
-	FROM http_post(
-		api_url,
-		JSONB_BUILD_OBJECT(
-			'model', 'nomic-embed-text',
-			'prompt', text_content
-		)::TEXT,
-		'application/json'
-	 );
+  SELECT content::jsonb
+  INTO response_body
+  FROM http((
+      'POST'::text,
+      api_url::text,
+      ARRAY[
+          http_header('Authorization', 'Bearer YOUR API KEY HERE'),
+          http_header('Content-Type', 'application/json')
+      ]::http_header[],
+      'application/json'::text,
+      jsonb_build_object(
+          'model', 'text-embedding-3-small',
+          'input', text_content,
+          'dimensions', 768
+      )::text
+  )::http_request);
 
 	SELECT ARRAY_AGG(e::DOUBLE PRECISION)
 	INTO embedding_array
-	FROM JSONB_ARRAY_ELEMENTS_TEXT(response_body -> 'embedding') AS e;
+	FROM jsonb_array_elements_text(response_body -> 'data' -> 0 -> 'embedding') AS e;
 
 	new.embedding = embedding_array::vector;
 
