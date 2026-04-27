@@ -1,4 +1,4 @@
-import { OllamaEmbeddings } from "@langchain/ollama";
+import { OpenAIEmbeddings } from "@langchain/openai";
 import { Service } from "diod";
 import { TextEncoder } from "node:util";
 
@@ -10,16 +10,23 @@ if (typeof globalThis.TextEncoder === "undefined") {
 }
 
 @Service()
-export class OllamaEmbeddingGenerator extends EmbeddingGenerator {
+export class OpenAIEmbeddingGenerator extends EmbeddingGenerator {
 	private readonly maxAttemptsToRetry = 3;
-	private readonly embeddings: OllamaEmbeddings;
+	private readonly embeddings: OpenAIEmbeddings;
 
 	constructor() {
 		super();
 
-		this.embeddings = new OllamaEmbeddings({
-			baseUrl: "http://localhost:11434",
-			model: "nomic-embed-text",
+		this.embeddings = new OpenAIEmbeddings({
+			// Configuración básica obligatoria
+			apiKey: process.env.OPENAI_API_KEY, // ⚠️ Necesitas tu API key
+			model: "text-embedding-3-small", // Modelo más reciente y económico
+			// Opciones recomendadas
+			dimensions: 768, // Misma dimensión que usas en PostgreSQL
+			timeout: 30000, // 30 segundos timeout
+			maxRetries: 3, // LangChain ya tiene retry incorporado
+			// Opcional: para debugging
+			verbose: process.env.NODE_ENV === "development",
 		});
 	}
 

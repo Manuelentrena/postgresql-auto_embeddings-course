@@ -25,7 +25,7 @@ import { EmbeddingGenerator } from "../../domain/EmbeddingGenerator";
 import { EventBus } from "../../domain/event/EventBus";
 import { SnapshotPublisher } from "../../domain/SnapshotPublisher";
 import { InMemoryEventBus } from "../domain-event/InMemoryEventBus";
-import { OllamaEmbeddingGenerator } from "../embedding/OllamaEmbeddingGenerator";
+import { OpenAIEmbeddingGenerator } from "../embedding/OpenIAEmbeddingGenerator";
 import { KafkaConsumer } from "../kafka/KafkaConsumer";
 import { KafkaProducer } from "../kafka/KafkaProducer";
 import { KafkaSnapshotPublisher } from "../kafka/KafkaSnapshotPublisher";
@@ -50,7 +50,7 @@ builder
 builder.register(EventBus).use(InMemoryEventBus);
 builder.register(Clock).use(SystemClock);
 
-builder.register(EmbeddingGenerator).use(OllamaEmbeddingGenerator);
+builder.register(EmbeddingGenerator).use(OpenAIEmbeddingGenerator);
 
 // Kafka
 builder
