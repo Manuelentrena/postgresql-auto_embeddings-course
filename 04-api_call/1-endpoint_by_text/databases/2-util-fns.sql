@@ -51,7 +51,7 @@ DECLARE
 BEGIN
 	SELECT ARRAY_AGG(e::DOUBLE PRECISION)
 	INTO embedding_array
-	FROM JSONB_ARRAY_ELEMENTS_TEXT(new.content::jsonb -> 'embedding') AS e;
+	FROM jsonb_array_elements_text(new.content::jsonb -> 'data' -> 0 -> 'embedding') AS e;
 
 	SELECT table_name FROM net.embedding_requests WHERE request_id = new.id INTO table_name_with_schema;
 
